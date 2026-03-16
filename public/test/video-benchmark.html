@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RWAI Video Benchmark</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #07111f;
+        --bg-soft: rgba(9, 21, 39, 0.72);
+        --card: rgba(255, 255, 255, 0.08);
+        --card-strong: rgba(255, 255, 255, 0.12);
+        --line: rgba(255, 255, 255, 0.14);
+        --text: #f8fbff;
+        --muted: #9fb4c8;
+        --accent: #4ecdc4;
+        --accent-2: #ffb84d;
+        --danger: #ff7b72;
+        --success: #7ee787;
+        --shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+        --radius: 24px;
+        --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(78, 205, 196, 0.22), transparent 30%),
+          radial-gradient(circle at top right, rgba(255, 184, 77, 0.18), transparent 28%),
+          linear-gradient(180deg, #0b1730 0%, #07111f 42%, #02060f 100%);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .page {
+        width: min(1200px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 32px 0 48px;
+      }
+
+      .hero,
+      .panel,
+      .log-panel {
+        backdrop-filter: blur(16px);
+        background: var(--bg-soft);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+
+      .hero {
+        padding: 28px;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        font-size: 0.82rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 5vw, 3.6rem);
+        line-height: 0.96;
+        letter-spacing: -0.04em;
+      }
+
+      .hero-copy {
+        max-width: 860px;
+        margin-top: 16px;
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.7;
+      }
+
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 24px;
+      }
+
+      .stat {
+        padding: 16px;
+        border-radius: 18px;
+        background: var(--card);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .stat-label {
+        display: block;
+        font-size: 0.74rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .stat-value {
+        display: block;
+        margin-top: 8px;
+        font-size: 1.2rem;
+        font-weight: 700;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      button {
+        appearance: none;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+        transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      button.primary {
+        background: linear-gradient(135deg, rgba(78, 205, 196, 0.95), rgba(45, 140, 235, 0.92));
+        color: #04111f;
+        font-weight: 700;
+      }
+
+      button.secondary {
+        border-color: rgba(255, 255, 255, 0.14);
+      }
+
+      button.active {
+        border-color: rgba(78, 205, 196, 0.9);
+        box-shadow: 0 0 0 1px rgba(78, 205, 196, 0.35);
+      }
+
+      .notes {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      .note {
+        padding: 18px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .note h2 {
+        font-size: 1rem;
+      }
+
+      .note p,
+      .note li {
+        margin-top: 10px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .note ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 28px;
+      }
+
+      .panel {
+        overflow: hidden;
+      }
+
+      .panel.active {
+        border-color: rgba(78, 205, 196, 0.5);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(78, 205, 196, 0.22);
+      }
+
+      .panel-head,
+      .panel-body,
+      .panel-foot {
+        padding: 20px;
+      }
+
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .panel-head h2 {
+        font-size: 1.15rem;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        font-size: 0.76rem;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .panel-subtitle {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.6;
+      }
+
+      .media-shell {
+        position: relative;
+        overflow: hidden;
+        aspect-ratio: 16 / 9;
+        border-radius: 18px;
+        background:
+          linear-gradient(135deg, rgba(78, 205, 196, 0.18), rgba(3, 13, 25, 0.4)),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .media-shell iframe,
+      .media-shell video {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        display: block;
+      }
+
+      .placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 10px;
+        padding: 22px;
+      }
+
+      .placeholder strong {
+        font-size: 1.1rem;
+      }
+
+      .placeholder p {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .panel-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+
+      .meta-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .meta-item {
+        padding: 14px;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .meta-item span {
+        display: block;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .meta-item strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 1rem;
+        line-height: 1.45;
+      }
+
+      .inline-code {
+        font-family: var(--mono);
+        font-size: 0.86rem;
+        word-break: break-all;
+      }
+
+      .log-panel {
+        margin-top: 28px;
+        padding: 22px;
+      }
+
+      .log-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+      }
+
+      .log-copy {
+        color: var(--muted);
+        margin-top: 10px;
+        line-height: 1.6;
+      }
+
+      pre {
+        margin: 18px 0 0;
+        padding: 18px;
+        border-radius: 18px;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #d7e4f2;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: var(--mono);
+        font-size: 0.84rem;
+        line-height: 1.55;
+      }
+
+      .success {
+        color: var(--success);
+      }
+
+      .warn {
+        color: var(--accent-2);
+      }
+
+      .danger {
+        color: var(--danger);
+      }
+
+      @media (max-width: 1024px) {
+        .status-grid,
+        .grid,
+        .notes {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 720px) {
+        .page {
+          width: min(100vw - 20px, 1200px);
+          padding-top: 20px;
+        }
+
+        .hero,
+        .panel-head,
+        .panel-body,
+        .panel-foot,
+        .log-panel {
+          padding-left: 16px;
+          padding-right: 16px;
+        }
+
+        .status-grid,
+        .grid,
+        .notes,
+        .meta-list {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .panel-head,
+        .log-header {
+          flex-direction: column;
+        }
+
+        .toolbar,
+        .panel-actions {
+          flex-direction: column;
+        }
+
+        button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow">RWAI Video Benchmark</p>
+        <h1>Compare YouTube, Bilibili, and native R2 playback on one page.</h1>
+        <p class="hero-copy">
+          The page probes whether Google is reachable from the client. When the probe succeeds it auto-loads
+          YouTube. When the probe fails it falls back to the native Cloudflare R2 video player and keeps
+          Bilibili ready as a manual backup for regions where YouTube is unavailable.
+        </p>
+        <div class="status-grid">
+          <div class="stat">
+            <span class="stat-label">Probe status</span>
+            <strong class="stat-value" id="probe-status">Running...</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Recommended default</span>
+            <strong class="stat-value" id="recommended-source">Pending</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">TTFB</span>
+            <strong class="stat-value" id="ttfb-value">Collecting...</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">FCP</span>
+            <strong class="stat-value" id="fcp-value">Collecting...</strong>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button class="primary" data-activate="youtube">Activate YouTube</button>
+          <button class="secondary" data-activate="bilibili">Activate Bilibili</button>
+          <button class="secondary" data-activate="r2">Activate R2 Native</button>
+          <button class="secondary" id="refresh-metrics">Refresh metrics</button>
+          <button class="secondary" id="export-report">Export JSON report</button>
+        </div>
+        <div class="notes">
+          <article class="note">
+            <h2>Benchmark notes</h2>
+            <ul>
+              <li>All media URLs use HTTPS, so mixed-content risk should stay at zero.</li>
+              <li>Cross-origin iframe internals are browser-isolated. Chunk counts for YouTube and Bilibili are best-effort.</li>
+              <li>Open this page on mobile and desktop in each region to compare layout, autoplay restrictions, and error signals.</li>
+            </ul>
+          </article>
+          <article class="note">
+            <h2>Embedded configuration</h2>
+            <p>YouTube uses <span class="inline-code">modestbranding=1&amp;rel=0</span>.</p>
+            <p>Bilibili uses <span class="inline-code">high_quality=1&amp;danmaku=0</span>.</p>
+            <p>R2 uses a native <span class="inline-code">&lt;video controls preload="metadata"&gt;</span> player.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="grid" id="source-grid">
+        <article class="panel" data-source-card="youtube">
+          <div class="panel-head">
+            <div>
+              <h2>YouTube Embed</h2>
+              <p class="panel-subtitle">Default choice when Google is reachable from the visitor network.</p>
+            </div>
+            <span class="pill" id="pill-youtube">Idle</span>
+          </div>
+          <div class="panel-body">
+            <div class="media-shell" id="mount-youtube">
+              <div class="placeholder">
+                <strong>YouTube player is not mounted yet.</strong>
+                <p>The player loads only when activated, reducing cross-platform interference during comparison runs.</p>
+              </div>
+            </div>
+            <div class="panel-actions">
+              <button class="secondary" data-activate="youtube">Load YouTube</button>
+            </div>
+          </div>
+          <div class="panel-foot">
+            <div class="meta-list">
+              <div class="meta-item">
+                <span>URL</span>
+                <strong class="inline-code">https://www.youtube.com/embed/E-a1PSTeyoA?modestbranding=1&amp;rel=0</strong>
+              </div>
+              <div class="meta-item">
+                <span>Load time</span>
+                <strong id="metric-youtube-load">Not loaded</strong>
+              </div>
+              <div class="meta-item">
+                <span>Chunk requests</span>
+                <strong id="metric-youtube-chunks">0 visible requests</strong>
+              </div>
+              <div class="meta-item">
+                <span>Errors</span>
+                <strong id="metric-youtube-errors">None captured</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel" data-source-card="bilibili">
+          <div class="panel-head">
+            <div>
+              <h2>Bilibili Embed</h2>
+              <p class="panel-subtitle">Fallback candidate for Mainland China or networks that block YouTube.</p>
+            </div>
+            <span class="pill" id="pill-bilibili">Idle</span>
+          </div>
+          <div class="panel-body">
+            <div class="media-shell" id="mount-bilibili">
+              <div class="placeholder">
+                <strong>Bilibili player is not mounted yet.</strong>
+                <p>Activate this card to inspect iframe availability, initial rendering, and any player-side denial behavior.</p>
+              </div>
+            </div>
+            <div class="panel-actions">
+              <button class="secondary" data-activate="bilibili">Load Bilibili</button>
+            </div>
+          </div>
+          <div class="panel-foot">
+            <div class="meta-list">
+              <div class="meta-item">
+                <span>BVID</span>
+                <strong class="inline-code">BV1srw5zBEwp</strong>
+              </div>
+              <div class="meta-item">
+                <span>Load time</span>
+                <strong id="metric-bilibili-load">Not loaded</strong>
+              </div>
+              <div class="meta-item">
+                <span>Chunk requests</span>
+                <strong id="metric-bilibili-chunks">0 visible requests</strong>
+              </div>
+              <div class="meta-item">
+                <span>Errors</span>
+                <strong id="metric-bilibili-errors">None captured</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel" data-source-card="r2">
+          <div class="panel-head">
+            <div>
+              <h2>Cloudflare R2 Native</h2>
+              <p class="panel-subtitle">Native HTML5 playback against the R2-backed benchmark asset.</p>
+            </div>
+            <span class="pill" id="pill-r2">Idle</span>
+          </div>
+          <div class="panel-body">
+            <div class="media-shell" id="mount-r2">
+              <div class="placeholder">
+                <strong>R2 player is not mounted yet.</strong>
+                <p>Activate this card to verify metadata preload, controls rendering, and media request behavior.</p>
+              </div>
+            </div>
+            <div class="panel-actions">
+              <button class="secondary" data-activate="r2">Load R2 Native</button>
+            </div>
+          </div>
+          <div class="panel-foot">
+            <div class="meta-list">
+              <div class="meta-item">
+                <span>Media URL</span>
+                <strong class="inline-code">https://pub-c6541ebc8cd04f158ca4ec989e453807.r2.dev/rwai-media/1.mov</strong>
+              </div>
+              <div class="meta-item">
+                <span>Load time</span>
+                <strong id="metric-r2-load">Not loaded</strong>
+              </div>
+              <div class="meta-item">
+                <span>Chunk requests</span>
+                <strong id="metric-r2-chunks">0 visible requests</strong>
+              </div>
+              <div class="meta-item">
+                <span>Errors</span>
+                <strong id="metric-r2-errors">None captured</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="log-panel">
+        <div class="log-header">
+          <div>
+            <h2>Session diagnostics</h2>
+            <p class="log-copy">
+              The log aggregates probe results, player load events, resource counts, and runtime warnings to help
+              manual performance testing across regions.
+            </p>
+          </div>
+          <span class="pill" id="warning-pill">Warnings: 0</span>
+        </div>
+        <pre id="session-log">Initializing benchmark diagnostics...</pre>
+      </section>
+    </main>
+
+    <script>
+      (function () {
+        const SOURCES = {
+          youtube: {
+            label: "YouTube",
+            kind: "iframe",
+            loadEvent: "load",
+            url: "https://www.youtube.com/embed/E-a1PSTeyoA?modestbranding=1&rel=0&playsinline=1",
+            hints: ["youtube.com", "googlevideo.com", "ytimg.com"]
+          },
+          bilibili: {
+            label: "Bilibili",
+            kind: "iframe",
+            loadEvent: "load",
+            url: "https://player.bilibili.com/player.html?bvid=BV1srw5zBEwp&page=1&high_quality=1&danmaku=0",
+            hints: ["bilibili.com", "bilivideo.com", "hdslb.com"]
+          },
+          r2: {
+            label: "Cloudflare R2",
+            kind: "video",
+            loadEvent: "loadedmetadata",
+            url: "https://pub-c6541ebc8cd04f158ca4ec989e453807.r2.dev/rwai-media/1.mov",
+            hints: ["pub-c6541ebc8cd04f158ca4ec989e453807.r2.dev", "r2.dev"]
+          }
+        };
+
+        const state = {
+          activeSource: null,
+          preferredSource: null,
+          probeStatus: "running",
+          pageMetrics: {
+            ttfbMs: null,
+            fcpMs: null
+          },
+          consoleEntries: [],
+          warnings: [],
+          sourceMetrics: Object.keys(SOURCES).reduce((accumulator, key) => {
+            accumulator[key] = {
+              loaded: false,
+              status: "idle",
+              activatedAt: null,
+              loadMs: null,
+              visibleRequests: 0,
+              errors: []
+            };
+            return accumulator;
+          }, {})
+        };
+
+        const dom = {
+          probeStatus: document.getElementById("probe-status"),
+          recommendedSource: document.getElementById("recommended-source"),
+          ttfbValue: document.getElementById("ttfb-value"),
+          fcpValue: document.getElementById("fcp-value"),
+          sessionLog: document.getElementById("session-log"),
+          warningPill: document.getElementById("warning-pill")
+        };
+
+        function nowIso() {
+          return new Date().toISOString();
+        }
+
+        function summarizeError(errorLike) {
+          if (!errorLike) {
+            return "Unknown error";
+          }
+
+          if (typeof errorLike === "string") {
+            return errorLike;
+          }
+
+          if (errorLike instanceof Error) {
+            return errorLike.message || errorLike.name;
+          }
+
+          try {
+            return JSON.stringify(errorLike);
+          } catch (error) {
+            return String(errorLike);
+          }
+        }
+
+        function appendLog(type, message) {
+          state.consoleEntries.push("[" + nowIso() + "] " + type.toUpperCase() + " " + message);
+          dom.sessionLog.textContent = state.consoleEntries.join("\n");
+        }
+
+        function pushWarning(message) {
+          state.warnings.push(message);
+          dom.warningPill.textContent = "Warnings: " + state.warnings.length;
+          appendLog("warn", message);
+        }
+
+        function setText(id, value) {
+          const element = document.getElementById(id);
+          if (element) {
+            element.textContent = value;
+          }
+        }
+
+        function setPill(key, value, className) {
+          const pill = document.getElementById("pill-" + key);
+          if (!pill) {
+            return;
+          }
+
+          pill.className = "pill";
+          if (className) {
+            pill.classList.add(className);
+          }
+          pill.textContent = value;
+        }
+
+        function updateTopMetrics() {
+          dom.probeStatus.textContent = state.probeStatus;
+          dom.recommendedSource.textContent = state.preferredSource ? SOURCES[state.preferredSource].label : "Pending";
+          dom.ttfbValue.textContent =
+            state.pageMetrics.ttfbMs === null ? "Collecting..." : state.pageMetrics.ttfbMs.toFixed(0) + " ms";
+          dom.fcpValue.textContent =
+            state.pageMetrics.fcpMs === null ? "Collecting..." : state.pageMetrics.fcpMs.toFixed(0) + " ms";
+        }
+
+        function refreshSourceMetrics() {
+          Object.keys(SOURCES).forEach((key) => {
+            const metrics = state.sourceMetrics[key];
+            const loadLabel = metrics.loadMs === null ? "Not loaded" : metrics.loadMs.toFixed(0) + " ms";
+            const errorLabel = metrics.errors.length ? metrics.errors[metrics.errors.length - 1] : "None captured";
+            const chunkLabel = metrics.visibleRequests + " visible requests";
+
+            setText("metric-" + key + "-load", loadLabel);
+            setText("metric-" + key + "-chunks", chunkLabel);
+            setText("metric-" + key + "-errors", errorLabel);
+
+            const card = document.querySelector('[data-source-card="' + key + '"]');
+            if (card) {
+              card.classList.toggle("active", state.activeSource === key);
+            }
+
+            const activateButtons = document.querySelectorAll('[data-activate="' + key + '"]');
+            activateButtons.forEach((button) => {
+              button.classList.toggle("active", state.activeSource === key);
+            });
+
+            if (metrics.status === "ready") {
+              setPill(key, "Ready", "success");
+            } else if (metrics.status === "loading") {
+              setPill(key, "Loading", "warn");
+            } else if (metrics.status === "error") {
+              setPill(key, "Error", "danger");
+            } else {
+              setPill(key, "Idle");
+            }
+          });
+        }
+
+        function updateResourceCounts() {
+          const resourceEntries = performance.getEntriesByType("resource");
+          Object.keys(SOURCES).forEach((key) => {
+            const metrics = state.sourceMetrics[key];
+            if (metrics.activatedAt === null) {
+              return;
+            }
+
+            metrics.visibleRequests = resourceEntries.filter((entry) => {
+              return (
+                entry.startTime >= metrics.activatedAt &&
+                SOURCES[key].hints.some((hint) => entry.name.indexOf(hint) !== -1)
+              );
+            }).length;
+          });
+
+          refreshSourceMetrics();
+        }
+
+        function exportReport() {
+          const report = {
+            generatedAt: nowIso(),
+            location: window.location.href,
+            preferredSource: state.preferredSource,
+            probeStatus: state.probeStatus,
+            pageMetrics: state.pageMetrics,
+            sourceMetrics: state.sourceMetrics,
+            warnings: state.warnings,
+            log: state.consoleEntries
+          };
+
+          const reportText = JSON.stringify(report, null, 2);
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(reportText).then(
+              function () {
+                appendLog("info", "Benchmark report copied to clipboard.");
+              },
+              function () {
+                appendLog("info", "Clipboard write failed. Report is printed in the diagnostics panel.");
+                dom.sessionLog.textContent = reportText + "\n\n" + dom.sessionLog.textContent;
+              }
+            );
+            return;
+          }
+
+          dom.sessionLog.textContent = reportText + "\n\n" + dom.sessionLog.textContent;
+          appendLog("info", "Clipboard API unavailable; JSON report printed above.");
+        }
+
+        function markSourceError(key, errorText) {
+          const metrics = state.sourceMetrics[key];
+          metrics.status = "error";
+          metrics.errors.push(errorText);
+          appendLog("error", SOURCES[key].label + ": " + errorText);
+          refreshSourceMetrics();
+        }
+
+        function markSourceReady(key) {
+          const metrics = state.sourceMetrics[key];
+          metrics.status = "ready";
+          metrics.loaded = true;
+          metrics.loadMs = performance.now() - metrics.activatedAt;
+          appendLog("info", SOURCES[key].label + " player became ready in " + metrics.loadMs.toFixed(0) + " ms.");
+          updateResourceCounts();
+        }
+
+        function buildPlayerNode(key) {
+          const source = SOURCES[key];
+          if (source.kind === "iframe") {
+            const iframe = document.createElement("iframe");
+            iframe.src = source.url;
+            iframe.allow =
+              "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+            iframe.allowFullscreen = true;
+            iframe.loading = "eager";
+            iframe.referrerPolicy = "strict-origin-when-cross-origin";
+            iframe.title = source.label + " benchmark player";
+            return iframe;
+          }
+
+          const video = document.createElement("video");
+          video.src = source.url;
+          video.controls = true;
+          video.preload = "metadata";
+          video.playsInline = true;
+          video.setAttribute("controlsList", "nodownload");
+          return video;
+        }
+
+        function activateSource(key, reason) {
+          const mount = document.getElementById("mount-" + key);
+          const metrics = state.sourceMetrics[key];
+          const source = SOURCES[key];
+          state.activeSource = key;
+
+          if (mount && !mount.querySelector("iframe, video")) {
+            metrics.activatedAt = performance.now();
+            metrics.status = "loading";
+            appendLog("info", "Activating " + source.label + " via " + reason + ".");
+            const playerNode = buildPlayerNode(key);
+            const timeoutId = window.setTimeout(function () {
+              if (!metrics.loaded && metrics.status !== "error") {
+                pushWarning(source.label + " did not confirm readiness within 10 seconds.");
+              }
+            }, 10000);
+
+            playerNode.addEventListener(source.loadEvent, function () {
+              window.clearTimeout(timeoutId);
+              markSourceReady(key);
+            });
+
+            playerNode.addEventListener("error", function (event) {
+              window.clearTimeout(timeoutId);
+              const detail =
+                source.kind === "video" && event.currentTarget && event.currentTarget.error
+                  ? "Media error code " + event.currentTarget.error.code
+                  : "Player load error";
+              markSourceError(key, detail);
+            });
+
+            mount.innerHTML = "";
+            mount.appendChild(playerNode);
+          } else {
+            appendLog("info", "Switched focus to " + source.label + " via " + reason + ".");
+          }
+
+          refreshSourceMetrics();
+        }
+
+        async function probeEnvironment() {
+          try {
+            const controller = new AbortController();
+            const timeoutId = window.setTimeout(function () {
+              controller.abort();
+            }, 3500);
+
+            await fetch("https://www.google.com/generate_204", {
+              method: "GET",
+              mode: "no-cors",
+              cache: "no-store",
+              credentials: "omit",
+              signal: controller.signal
+            });
+
+            window.clearTimeout(timeoutId);
+            state.probeStatus = "Google reachable";
+            state.preferredSource = "youtube";
+            appendLog("info", "Google probe succeeded. Default source set to YouTube.");
+          } catch (error) {
+            state.probeStatus = "Google blocked or probe failed";
+            state.preferredSource = "r2";
+            pushWarning("Google probe failed; default source changed to Cloudflare R2. Bilibili remains available as backup.");
+            appendLog("info", "Probe failure detail: " + summarizeError(error));
+          }
+
+          updateTopMetrics();
+          activateSource(state.preferredSource, "auto-detect");
+        }
+
+        function captureNavigationMetrics() {
+          const navEntry = performance.getEntriesByType("navigation")[0];
+          if (navEntry) {
+            state.pageMetrics.ttfbMs = navEntry.responseStart - navEntry.requestStart;
+            updateTopMetrics();
+          }
+
+          const existingPaintEntry = performance
+            .getEntriesByType("paint")
+            .find(function (entry) {
+              return entry.name === "first-contentful-paint";
+            });
+
+          if (existingPaintEntry) {
+            state.pageMetrics.fcpMs = existingPaintEntry.startTime;
+            updateTopMetrics();
+            return;
+          }
+
+          if ("PerformanceObserver" in window) {
+            try {
+              const observer = new PerformanceObserver(function (list) {
+                list.getEntries().forEach(function (entry) {
+                  if (entry.name === "first-contentful-paint") {
+                    state.pageMetrics.fcpMs = entry.startTime;
+                    updateTopMetrics();
+                  }
+                });
+              });
+              observer.observe({ type: "paint", buffered: true });
+            } catch (error) {
+              appendLog("warn", "PerformanceObserver paint metrics unavailable: " + summarizeError(error));
+            }
+          }
+        }
+
+        function wireConsoleCapture() {
+          const originalError = console.error;
+          const originalWarn = console.warn;
+
+          console.error = function () {
+            const text = Array.prototype.map.call(arguments, summarizeError).join(" | ");
+            appendLog("error", "console.error " + text);
+            originalError.apply(console, arguments);
+          };
+
+          console.warn = function () {
+            const text = Array.prototype.map.call(arguments, summarizeError).join(" | ");
+            appendLog("warn", "console.warn " + text);
+            originalWarn.apply(console, arguments);
+          };
+
+          window.addEventListener("error", function (event) {
+            appendLog("error", "window.error " + summarizeError(event.message || event.error));
+          });
+
+          window.addEventListener("unhandledrejection", function (event) {
+            appendLog("error", "unhandledrejection " + summarizeError(event.reason));
+          });
+
+          window.addEventListener("securitypolicyviolation", function (event) {
+            const detail =
+              "Security policy violation: " +
+              event.effectiveDirective +
+              (event.blockedURI ? " blocked " + event.blockedURI : "");
+            pushWarning(detail);
+          });
+        }
+
+        function wireUi() {
+          document.querySelectorAll("[data-activate]").forEach(function (button) {
+            button.addEventListener("click", function () {
+              activateSource(button.getAttribute("data-activate"), "manual switch");
+            });
+          });
+
+          document.getElementById("refresh-metrics").addEventListener("click", function () {
+            updateResourceCounts();
+            appendLog("info", "Metrics refresh requested.");
+          });
+
+          document.getElementById("export-report").addEventListener("click", exportReport);
+        }
+
+        captureNavigationMetrics();
+        wireConsoleCapture();
+        wireUi();
+        updateTopMetrics();
+        refreshSourceMetrics();
+        appendLog("info", "Video benchmark initialized.");
+
+        window.setInterval(updateResourceCounts, 2000);
+        probeEnvironment();
+      })();
+    </script>
+  </body>
+</html>
