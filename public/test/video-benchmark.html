@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>RWAI Video Benchmark</title>
+    <title>RWAI 视频托管对比测试</title>
     <style>
       :root {
         color-scheme: light;
@@ -415,52 +415,52 @@
   <body>
     <main class="page">
       <section class="hero">
-        <p class="eyebrow">RWAI Video Benchmark</p>
-        <h1>Compare YouTube, Bilibili, and native R2 playback on one page.</h1>
+        <p class="eyebrow">RWAI 视频托管对比测试</p>
+        <h1>在同一页面对比 YouTube、B站 与原生 R2 播放表现。</h1>
         <p class="hero-copy">
-          The page probes whether Google is reachable from the client. When the probe succeeds it auto-loads
-          YouTube. When the probe fails it falls back to the native Cloudflare R2 video player and keeps
-          Bilibili ready as a manual backup for regions where YouTube is unavailable.
+          页面会先探测当前网络是否可访问 Google。若探测成功，则默认高亮 YouTube；若失败，则默认高亮
+          Cloudflare R2，并保留 B站 作为备用参考。三个播放器都会在页面加载时立即挂载，便于直接观察渲染、
+          请求和报错差异。
         </p>
         <div class="status-grid">
           <div class="stat">
-            <span class="stat-label">Probe status</span>
-            <strong class="stat-value" id="probe-status">Running...</strong>
+            <span class="stat-label">网络探测</span>
+            <strong class="stat-value" id="probe-status">探测中...</strong>
           </div>
           <div class="stat">
-            <span class="stat-label">Recommended default</span>
-            <strong class="stat-value" id="recommended-source">Pending</strong>
+            <span class="stat-label">默认建议</span>
+            <strong class="stat-value" id="recommended-source">待判定</strong>
           </div>
           <div class="stat">
             <span class="stat-label">TTFB</span>
-            <strong class="stat-value" id="ttfb-value">Collecting...</strong>
+            <strong class="stat-value" id="ttfb-value">采集中...</strong>
           </div>
           <div class="stat">
             <span class="stat-label">FCP</span>
-            <strong class="stat-value" id="fcp-value">Collecting...</strong>
+            <strong class="stat-value" id="fcp-value">采集中...</strong>
           </div>
         </div>
         <div class="toolbar">
-          <button class="primary" data-activate="youtube">Activate YouTube</button>
-          <button class="secondary" data-activate="bilibili">Activate Bilibili</button>
-          <button class="secondary" data-activate="r2">Activate R2 Native</button>
-          <button class="secondary" id="refresh-metrics">Refresh metrics</button>
-          <button class="secondary" id="export-report">Export JSON report</button>
+          <button class="primary" data-activate="youtube">高亮 YouTube</button>
+          <button class="secondary" data-activate="bilibili">高亮 B站</button>
+          <button class="secondary" data-activate="r2">高亮 R2 原生播放</button>
+          <button class="secondary" id="refresh-metrics">刷新指标</button>
+          <button class="secondary" id="export-report">导出 JSON 报告</button>
         </div>
         <div class="notes">
           <article class="note">
-            <h2>Benchmark notes</h2>
+            <h2>测试说明</h2>
             <ul>
-              <li>All media URLs use HTTPS, so mixed-content risk should stay at zero.</li>
-              <li>Cross-origin iframe internals are browser-isolated. Chunk counts for YouTube and Bilibili are best-effort.</li>
-              <li>Open this page on mobile and desktop in each region to compare layout, autoplay restrictions, and error signals.</li>
+              <li>所有媒体地址均使用 HTTPS，理论上不应触发 Mixed Content。</li>
+              <li>跨域 iframe 内部请求受浏览器隔离限制，YouTube 与 B站 的分片请求数只能做近似观测。</li>
+              <li>建议在各区域分别用桌面端和移动端打开，以对比布局、自动播放限制和报错行为。</li>
             </ul>
           </article>
           <article class="note">
-            <h2>Embedded configuration</h2>
-            <p>YouTube uses <span class="inline-code">modestbranding=1&amp;rel=0</span>.</p>
-            <p>Bilibili uses <span class="inline-code">high_quality=1&amp;danmaku=0</span>.</p>
-            <p>R2 uses a native <span class="inline-code">&lt;video controls preload="metadata"&gt;</span> player.</p>
+            <h2>嵌入参数</h2>
+            <p>YouTube 使用 <span class="inline-code">modestbranding=1&amp;rel=0</span>。</p>
+            <p>B站 使用 <span class="inline-code">high_quality=1&amp;danmaku=0</span>。</p>
+            <p>R2 使用原生 <span class="inline-code">&lt;video controls preload="metadata"&gt;</span> 播放器。</p>
           </article>
         </div>
       </section>
@@ -469,20 +469,20 @@
         <article class="panel" data-source-card="youtube">
           <div class="panel-head">
             <div>
-              <h2>YouTube Embed</h2>
-              <p class="panel-subtitle">Default choice when Google is reachable from the visitor network.</p>
+              <h2>YouTube 嵌入</h2>
+              <p class="panel-subtitle">当访问者网络可访问 Google 时，默认建议优先观察这一方案。</p>
             </div>
-            <span class="pill" id="pill-youtube">Idle</span>
+            <span class="pill" id="pill-youtube">待挂载</span>
           </div>
           <div class="panel-body">
             <div class="media-shell" id="mount-youtube">
               <div class="placeholder">
-                <strong>YouTube player is not mounted yet.</strong>
-                <p>The player loads only when activated, reducing cross-platform interference during comparison runs.</p>
+                <strong>YouTube 播放器尚未挂载。</strong>
+                <p>页面初始化后会自动挂载该播放器；若仍停留在此状态，说明脚本执行或播放器加载出现异常。</p>
               </div>
             </div>
             <div class="panel-actions">
-              <button class="secondary" data-activate="youtube">Load YouTube</button>
+              <button class="secondary" data-activate="youtube">聚焦 YouTube</button>
             </div>
           </div>
           <div class="panel-foot">
@@ -492,16 +492,16 @@
                 <strong class="inline-code">https://www.youtube.com/embed/E-a1PSTeyoA?modestbranding=1&amp;rel=0</strong>
               </div>
               <div class="meta-item">
-                <span>Load time</span>
-                <strong id="metric-youtube-load">Not loaded</strong>
+                <span>加载时间</span>
+                <strong id="metric-youtube-load">未完成</strong>
               </div>
               <div class="meta-item">
-                <span>Chunk requests</span>
-                <strong id="metric-youtube-chunks">0 visible requests</strong>
+                <span>分片请求数</span>
+                <strong id="metric-youtube-chunks">0 条可见请求</strong>
               </div>
               <div class="meta-item">
-                <span>Errors</span>
-                <strong id="metric-youtube-errors">None captured</strong>
+                <span>错误</span>
+                <strong id="metric-youtube-errors">未捕获</strong>
               </div>
             </div>
           </div>
@@ -510,20 +510,20 @@
         <article class="panel" data-source-card="bilibili">
           <div class="panel-head">
             <div>
-              <h2>Bilibili Embed</h2>
-              <p class="panel-subtitle">Fallback candidate for Mainland China or networks that block YouTube.</p>
+              <h2>B站嵌入</h2>
+              <p class="panel-subtitle">适合中国大陆或无法稳定访问 YouTube 的网络环境。</p>
             </div>
-            <span class="pill" id="pill-bilibili">Idle</span>
+            <span class="pill" id="pill-bilibili">待挂载</span>
           </div>
           <div class="panel-body">
             <div class="media-shell" id="mount-bilibili">
               <div class="placeholder">
-                <strong>Bilibili player is not mounted yet.</strong>
-                <p>Activate this card to inspect iframe availability, initial rendering, and any player-side denial behavior.</p>
+                <strong>B站播放器尚未挂载。</strong>
+                <p>页面初始化后会自动挂载该 iframe；若仍停留在此状态，说明脚本执行或播放器加载出现异常。</p>
               </div>
             </div>
             <div class="panel-actions">
-              <button class="secondary" data-activate="bilibili">Load Bilibili</button>
+              <button class="secondary" data-activate="bilibili">聚焦 B站</button>
             </div>
           </div>
           <div class="panel-foot">
@@ -533,16 +533,16 @@
                 <strong class="inline-code">BV1srw5zBEwp</strong>
               </div>
               <div class="meta-item">
-                <span>Load time</span>
-                <strong id="metric-bilibili-load">Not loaded</strong>
+                <span>加载时间</span>
+                <strong id="metric-bilibili-load">未完成</strong>
               </div>
               <div class="meta-item">
-                <span>Chunk requests</span>
-                <strong id="metric-bilibili-chunks">0 visible requests</strong>
+                <span>分片请求数</span>
+                <strong id="metric-bilibili-chunks">0 条可见请求</strong>
               </div>
               <div class="meta-item">
-                <span>Errors</span>
-                <strong id="metric-bilibili-errors">None captured</strong>
+                <span>错误</span>
+                <strong id="metric-bilibili-errors">未捕获</strong>
               </div>
             </div>
           </div>
@@ -551,39 +551,39 @@
         <article class="panel" data-source-card="r2">
           <div class="panel-head">
             <div>
-              <h2>Cloudflare R2 Native</h2>
-              <p class="panel-subtitle">Native HTML5 playback against the R2-backed benchmark asset.</p>
+              <h2>Cloudflare R2 原生播放</h2>
+              <p class="panel-subtitle">直接使用 HTML5 原生视频标签加载 R2 资源，便于观察媒体请求与浏览器错误。</p>
             </div>
-            <span class="pill" id="pill-r2">Idle</span>
+            <span class="pill" id="pill-r2">待挂载</span>
           </div>
           <div class="panel-body">
             <div class="media-shell" id="mount-r2">
               <div class="placeholder">
-                <strong>R2 player is not mounted yet.</strong>
-                <p>Activate this card to verify metadata preload, controls rendering, and media request behavior.</p>
+                <strong>R2 播放器尚未挂载。</strong>
+                <p>页面初始化后会自动挂载原生视频标签；若失败，通常会在下方错误项中出现媒体加载错误。</p>
               </div>
             </div>
             <div class="panel-actions">
-              <button class="secondary" data-activate="r2">Load R2 Native</button>
+              <button class="secondary" data-activate="r2">聚焦 R2</button>
             </div>
           </div>
           <div class="panel-foot">
             <div class="meta-list">
               <div class="meta-item">
-                <span>Media URL</span>
+                <span>媒体地址</span>
                 <strong class="inline-code">https://pub-c6541ebc8cd04f158ca4ec989e453807.r2.dev/rwai-media/1.mov</strong>
               </div>
               <div class="meta-item">
-                <span>Load time</span>
-                <strong id="metric-r2-load">Not loaded</strong>
+                <span>加载时间</span>
+                <strong id="metric-r2-load">未完成</strong>
               </div>
               <div class="meta-item">
-                <span>Chunk requests</span>
-                <strong id="metric-r2-chunks">0 visible requests</strong>
+                <span>分片请求数</span>
+                <strong id="metric-r2-chunks">0 条可见请求</strong>
               </div>
               <div class="meta-item">
-                <span>Errors</span>
-                <strong id="metric-r2-errors">None captured</strong>
+                <span>错误</span>
+                <strong id="metric-r2-errors">未捕获</strong>
               </div>
             </div>
           </div>
@@ -593,15 +593,14 @@
       <section class="log-panel">
         <div class="log-header">
           <div>
-            <h2>Session diagnostics</h2>
+            <h2>会话诊断</h2>
             <p class="log-copy">
-              The log aggregates probe results, player load events, resource counts, and runtime warnings to help
-              manual performance testing across regions.
+              这里会汇总网络探测、播放器加载、请求统计和运行时警告，方便你在不同区域进行人工性能对比。
             </p>
           </div>
-          <span class="pill" id="warning-pill">Warnings: 0</span>
+          <span class="pill" id="warning-pill">警告：0</span>
         </div>
-        <pre id="session-log">Initializing benchmark diagnostics...</pre>
+        <pre id="session-log">正在初始化测试诊断...</pre>
       </section>
     </main>
 
@@ -616,7 +615,7 @@
             hints: ["youtube.com", "googlevideo.com", "ytimg.com"]
           },
           bilibili: {
-            label: "Bilibili",
+            label: "B站",
             kind: "iframe",
             loadEvent: "load",
             url: "https://player.bilibili.com/player.html?bvid=BV1srw5zBEwp&page=1&high_quality=1&danmaku=0",
@@ -634,7 +633,7 @@
         const state = {
           activeSource: null,
           preferredSource: null,
-          probeStatus: "running",
+          probeStatus: "探测中",
           pageMetrics: {
             ttfbMs: null,
             fcpMs: null
@@ -669,7 +668,7 @@
 
         function summarizeError(errorLike) {
           if (!errorLike) {
-            return "Unknown error";
+            return "未知错误";
           }
 
           if (typeof errorLike === "string") {
@@ -694,7 +693,7 @@
 
         function pushWarning(message) {
           state.warnings.push(message);
-          dom.warningPill.textContent = "Warnings: " + state.warnings.length;
+          dom.warningPill.textContent = "警告：" + state.warnings.length;
           appendLog("warn", message);
         }
 
@@ -720,19 +719,19 @@
 
         function updateTopMetrics() {
           dom.probeStatus.textContent = state.probeStatus;
-          dom.recommendedSource.textContent = state.preferredSource ? SOURCES[state.preferredSource].label : "Pending";
+          dom.recommendedSource.textContent = state.preferredSource ? SOURCES[state.preferredSource].label : "待判定";
           dom.ttfbValue.textContent =
-            state.pageMetrics.ttfbMs === null ? "Collecting..." : state.pageMetrics.ttfbMs.toFixed(0) + " ms";
+            state.pageMetrics.ttfbMs === null ? "采集中..." : state.pageMetrics.ttfbMs.toFixed(0) + " ms";
           dom.fcpValue.textContent =
-            state.pageMetrics.fcpMs === null ? "Collecting..." : state.pageMetrics.fcpMs.toFixed(0) + " ms";
+            state.pageMetrics.fcpMs === null ? "采集中..." : state.pageMetrics.fcpMs.toFixed(0) + " ms";
         }
 
         function refreshSourceMetrics() {
           Object.keys(SOURCES).forEach((key) => {
             const metrics = state.sourceMetrics[key];
-            const loadLabel = metrics.loadMs === null ? "Not loaded" : metrics.loadMs.toFixed(0) + " ms";
-            const errorLabel = metrics.errors.length ? metrics.errors[metrics.errors.length - 1] : "None captured";
-            const chunkLabel = metrics.visibleRequests + " visible requests";
+            const loadLabel = metrics.loadMs === null ? "未完成" : metrics.loadMs.toFixed(0) + " ms";
+            const errorLabel = metrics.errors.length ? metrics.errors[metrics.errors.length - 1] : "未捕获";
+            const chunkLabel = metrics.visibleRequests + " 条可见请求";
 
             setText("metric-" + key + "-load", loadLabel);
             setText("metric-" + key + "-chunks", chunkLabel);
@@ -749,13 +748,13 @@
             });
 
             if (metrics.status === "ready") {
-              setPill(key, "Ready", "success");
+              setPill(key, "已就绪", "success");
             } else if (metrics.status === "loading") {
-              setPill(key, "Loading", "warn");
+              setPill(key, "加载中", "warn");
             } else if (metrics.status === "error") {
-              setPill(key, "Error", "danger");
+              setPill(key, "错误", "danger");
             } else {
-              setPill(key, "Idle");
+              setPill(key, "待挂载");
             }
           });
         }
@@ -796,10 +795,10 @@
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(reportText).then(
               function () {
-                appendLog("info", "Benchmark report copied to clipboard.");
+                appendLog("info", "测试报告已复制到剪贴板。");
               },
               function () {
-                appendLog("info", "Clipboard write failed. Report is printed in the diagnostics panel.");
+                appendLog("info", "写入剪贴板失败，已将报告输出到诊断面板。");
                 dom.sessionLog.textContent = reportText + "\n\n" + dom.sessionLog.textContent;
               }
             );
@@ -807,14 +806,14 @@
           }
 
           dom.sessionLog.textContent = reportText + "\n\n" + dom.sessionLog.textContent;
-          appendLog("info", "Clipboard API unavailable; JSON report printed above.");
+          appendLog("info", "当前环境不支持剪贴板接口，已将 JSON 报告输出在上方。");
         }
 
         function markSourceError(key, errorText) {
           const metrics = state.sourceMetrics[key];
           metrics.status = "error";
           metrics.errors.push(errorText);
-          appendLog("error", SOURCES[key].label + ": " + errorText);
+          appendLog("error", SOURCES[key].label + "：" + errorText);
           refreshSourceMetrics();
         }
 
@@ -823,7 +822,7 @@
           metrics.status = "ready";
           metrics.loaded = true;
           metrics.loadMs = performance.now() - metrics.activatedAt;
-          appendLog("info", SOURCES[key].label + " player became ready in " + metrics.loadMs.toFixed(0) + " ms.");
+          appendLog("info", SOURCES[key].label + " 播放器已就绪，耗时 " + metrics.loadMs.toFixed(0) + " ms。");
           updateResourceCounts();
         }
 
@@ -837,7 +836,7 @@
             iframe.allowFullscreen = true;
             iframe.loading = "eager";
             iframe.referrerPolicy = "strict-origin-when-cross-origin";
-            iframe.title = source.label + " benchmark player";
+            iframe.title = source.label + " 对比测试播放器";
             return iframe;
           }
 
@@ -859,11 +858,11 @@
           if (mount && !mount.querySelector("iframe, video")) {
             metrics.activatedAt = performance.now();
             metrics.status = "loading";
-            appendLog("info", "Activating " + source.label + " via " + reason + ".");
+            appendLog("info", "开始挂载 " + source.label + "，触发方式：" + reason + "。");
             const playerNode = buildPlayerNode(key);
             const timeoutId = window.setTimeout(function () {
               if (!metrics.loaded && metrics.status !== "error") {
-                pushWarning(source.label + " did not confirm readiness within 10 seconds.");
+                pushWarning(source.label + " 在 10 秒内未确认就绪。");
               }
             }, 10000);
 
@@ -876,18 +875,24 @@
               window.clearTimeout(timeoutId);
               const detail =
                 source.kind === "video" && event.currentTarget && event.currentTarget.error
-                  ? "Media error code " + event.currentTarget.error.code
-                  : "Player load error";
+                  ? "媒体错误码 " + event.currentTarget.error.code
+                  : "播放器加载失败";
               markSourceError(key, detail);
             });
 
             mount.innerHTML = "";
             mount.appendChild(playerNode);
           } else {
-            appendLog("info", "Switched focus to " + source.label + " via " + reason + ".");
+            appendLog("info", "已切换高亮焦点到 " + source.label + "，触发方式：" + reason + "。");
           }
 
           refreshSourceMetrics();
+        }
+
+        function mountAllSources() {
+          Object.keys(SOURCES).forEach(function (key) {
+            activateSource(key, "页面初始化");
+          });
         }
 
         async function probeEnvironment() {
@@ -906,18 +911,18 @@
             });
 
             window.clearTimeout(timeoutId);
-            state.probeStatus = "Google reachable";
+            state.probeStatus = "Google 可访问";
             state.preferredSource = "youtube";
-            appendLog("info", "Google probe succeeded. Default source set to YouTube.");
+            appendLog("info", "Google 探测成功，默认建议切换为 YouTube。");
           } catch (error) {
-            state.probeStatus = "Google blocked or probe failed";
+            state.probeStatus = "Google 不可访问或探测失败";
             state.preferredSource = "r2";
-            pushWarning("Google probe failed; default source changed to Cloudflare R2. Bilibili remains available as backup.");
-            appendLog("info", "Probe failure detail: " + summarizeError(error));
+            pushWarning("Google 探测失败，默认建议已切换为 Cloudflare R2，B站 保持为备用方案。");
+            appendLog("info", "探测失败详情：" + summarizeError(error));
           }
 
           updateTopMetrics();
-          activateSource(state.preferredSource, "auto-detect");
+          activateSource(state.preferredSource, "自动探测");
         }
 
         function captureNavigationMetrics() {
@@ -951,7 +956,7 @@
               });
               observer.observe({ type: "paint", buffered: true });
             } catch (error) {
-              appendLog("warn", "PerformanceObserver paint metrics unavailable: " + summarizeError(error));
+              appendLog("warn", "当前环境无法读取 PerformanceObserver paint 指标：" + summarizeError(error));
             }
           }
         }
@@ -982,9 +987,9 @@
 
           window.addEventListener("securitypolicyviolation", function (event) {
             const detail =
-              "Security policy violation: " +
+              "安全策略违规：" +
               event.effectiveDirective +
-              (event.blockedURI ? " blocked " + event.blockedURI : "");
+              (event.blockedURI ? "，被拦截资源 " + event.blockedURI : "");
             pushWarning(detail);
           });
         }
@@ -992,13 +997,13 @@
         function wireUi() {
           document.querySelectorAll("[data-activate]").forEach(function (button) {
             button.addEventListener("click", function () {
-              activateSource(button.getAttribute("data-activate"), "manual switch");
+              activateSource(button.getAttribute("data-activate"), "手动切换");
             });
           });
 
           document.getElementById("refresh-metrics").addEventListener("click", function () {
             updateResourceCounts();
-            appendLog("info", "Metrics refresh requested.");
+            appendLog("info", "已手动刷新指标。");
           });
 
           document.getElementById("export-report").addEventListener("click", exportReport);
@@ -1009,7 +1014,8 @@
         wireUi();
         updateTopMetrics();
         refreshSourceMetrics();
-        appendLog("info", "Video benchmark initialized.");
+        mountAllSources();
+        appendLog("info", "视频对比测试页已初始化。");
 
         window.setInterval(updateResourceCounts, 2000);
         probeEnvironment();
