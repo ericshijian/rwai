@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Arena } from '@/lib/types';
 import { industries } from '@/lib/arena-taxonomy';
+import { VideoPlayOverlay } from '@/components/ui/video-play-overlay';
+import { getBilibiliEmbedUrl, getYouTubeEmbedUrl, isBilibiliUrl, isYouTubeUrl } from '@/lib/video-platform';
 
 interface FeaturedArenasShowcaseProps {
   arenas: Arena[];
@@ -115,50 +117,54 @@ export function FeaturedArenasShowcaseSkeleton() {
 export function FeaturedArenasShowcase({ arenas, locale, title, subtitle }: FeaturedArenasShowcaseProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [activatedVideoArenaId, setActivatedVideoArenaId] = useState<string | null>(null);
   const [videoError, setVideoError] = useState(false);
-  const [videoLoading, setVideoLoading] = useState(true);
+  const [videoLoading, setVideoLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   const withBasePath = (path: string) => `${basePath}${path}`;
 
   const selectedArena = arenas[selectedIndex] || arenas[0];
+  const selectedArenaId = selectedArena?.id;
   const isZh = locale === 'zh';
-  const selectedVideoUrl = (selectedArena?.videoUrl || '').trim();
+  const selectedVideoUrl = (isZh ? (selectedArena?.videoUrlZh || '') : (selectedArena?.videoUrlGlobal || '')).trim();
+  const selectedVideoCoverImageUrl = (selectedArena?.videoCoverImageUrl || '').trim();
   const hasSelectedVideo = Boolean(selectedVideoUrl);
+  const isSelectedBilibiliVideo = hasSelectedVideo && isBilibiliUrl(selectedVideoUrl);
+  const isSelectedYouTubeVideo = hasSelectedVideo && isYouTubeUrl(selectedVideoUrl);
+  const selectedBilibiliEmbedUrl = isSelectedBilibiliVideo ? getBilibiliEmbedUrl(selectedVideoUrl) : null;
+  const selectedYouTubeEmbedUrl = isSelectedYouTubeVideo ? getYouTubeEmbedUrl(selectedVideoUrl) : null;
+  const isVideoActivated = activatedVideoArenaId === selectedArenaId;
 
   useEffect(() => {
-    if (!hasSelectedVideo) {
+    if (!selectedArenaId || !hasSelectedVideo || !isVideoActivated) {
       return;
     }
 
-    let rafId: number | null = null;
+    const videoEl = videoRef.current;
+    if (!videoEl) {
+      return;
+    }
+
+    videoEl.muted = true;
+    videoEl.load();
+    const playPromise = videoEl.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {
+        setVideoLoading(false);
+      });
+    }
+  }, [selectedArenaId, hasSelectedVideo, isVideoActivated]);
+
+  const activateVideoPlayback = () => {
+    if (!selectedArena || !hasSelectedVideo || isSelectedBilibiliVideo || isSelectedYouTubeVideo) {
+      return;
+    }
+
     setVideoError(false);
     setVideoLoading(true);
-
-    const checkReady = () => {
-      const videoEl = videoRef.current;
-      if (!videoEl) {
-        rafId = requestAnimationFrame(checkReady);
-        return;
-      }
-
-      // Fallback for browsers/environments where canplay/loadeddata timing is inconsistent.
-      if (videoEl.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA || videoEl.currentTime > 0) {
-        setVideoLoading(false);
-        return;
-      }
-
-      rafId = requestAnimationFrame(checkReady);
-    };
-
-    rafId = requestAnimationFrame(checkReady);
-
-    return () => {
-      if (rafId !== null) {
-        cancelAnimationFrame(rafId);
-      }
-    };
-  }, [selectedArena?.id, hasSelectedVideo]);
+    setActivatedVideoArenaId(selectedArena.id);
+  };
 
   return (
     <section className="relative py-section bg-[#0A0E17]">
@@ -180,7 +186,12 @@ export function FeaturedArenasShowcase({ arenas, locale, title, subtitle }: Feat
                   className="relative group cursor-pointer"
                   onMouseEnter={() => setHoveredIndex(index)}
                   onMouseLeave={() => setHoveredIndex(null)}
-                  onClick={() => setSelectedIndex(index)}
+                  onClick={() => {
+                    setSelectedIndex(index);
+                    setActivatedVideoArenaId(null);
+                    setVideoError(false);
+                    setVideoLoading(false);
+                  }}
                 >
                   {/* Background - highlight on selected/hover */}
                   <div className={`
@@ -294,15 +305,71 @@ export function FeaturedArenasShowcase({ arenas, locale, title, subtitle }: Feat
                       <p className="text-sm text-gray-400">{isZh ? '演示视频正在准备中' : 'Demo video coming soon'}</p>
                     </div>
                   </div>
+                ) : isSelectedBilibiliVideo ? (
+                  selectedBilibiliEmbedUrl ? (
+                    <iframe
+                      key={selectedArena.id}
+                      src={selectedBilibiliEmbedUrl}
+                      className="w-full aspect-video bg-black"
+                      allow="autoplay; fullscreen"
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      title={isZh ? '哔哩哔哩视频' : 'Bilibili video'}
+                    />
+                  ) : (
+                    <div className="w-full aspect-video bg-black flex items-center justify-center text-white p-8">
+                      <div className="text-center">
+                        <p className="text-lg mb-2">
+                          {isZh ? 'Bilibili 链接格式暂不支持' : 'Unsupported Bilibili URL format'}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          {isZh ? '请使用 bilibili.com/video/BV... 链接' : 'Please use a bilibili.com/video/BV... link'}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                ) : isSelectedYouTubeVideo ? (
+                  selectedYouTubeEmbedUrl ? (
+                    <iframe
+                      key={selectedArena.id}
+                      src={selectedYouTubeEmbedUrl}
+                      className="w-full aspect-video bg-black"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      title={isZh ? 'YouTube 视频' : 'YouTube video'}
+                    />
+                  ) : (
+                    <div className="w-full aspect-video bg-black flex items-center justify-center text-white p-8">
+                      <div className="text-center">
+                        <p className="text-lg mb-2">
+                          {isZh ? 'YouTube 链接格式暂不支持' : 'Unsupported YouTube URL format'}
+                        </p>
+                        <p className="text-sm text-gray-400">
+                          {isZh ? '请使用 youtube.com/watch?v=... 或 youtu.be/... 链接' : 'Please use a youtube.com/watch?v=... or youtu.be/... link'}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                ) : !isVideoActivated ? (
+                  <VideoPlayOverlay
+                    className="aspect-video"
+                    coverImageUrl={selectedVideoCoverImageUrl}
+                    coverAlt={isZh ? '视频封面' : 'Video cover'}
+                    ariaLabel={isZh ? '播放演示视频' : 'Play demo video'}
+                    onClick={activateVideoPlayback}
+                  />
                 ) : (
                   <video
                     key={selectedArena.id}
                     ref={videoRef}
                     className="w-full aspect-video object-contain bg-black"
                     controls
-                    autoPlay
+                    loop={false}
                     muted
-                    loop
+                    preload="none"
                     playsInline
                     onError={() => {
                       setVideoError(true);
@@ -322,10 +389,12 @@ export function FeaturedArenasShowcase({ arenas, locale, title, subtitle }: Feat
                       setVideoLoading(false);
                     }}
                   >
-                    <source
-                      src={selectedVideoUrl}
-                      type="video/mp4"
-                    />
+                    {isVideoActivated ? (
+                      <source
+                        src={selectedVideoUrl}
+                        type="video/mp4"
+                      />
+                    ) : null}
                     Your browser does not support the video tag.
                   </video>
                 )
@@ -337,7 +406,7 @@ export function FeaturedArenasShowcase({ arenas, locale, title, subtitle }: Feat
               )}
 
               {/* Loading overlay */}
-              {videoLoading && !videoError && hasSelectedVideo && selectedArena && (
+              {videoLoading && !videoError && hasSelectedVideo && selectedArena && isVideoActivated && !isSelectedBilibiliVideo && !isSelectedYouTubeVideo && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <div className="text-white text-center">
                     <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-3"></div>

@@ -38,6 +38,7 @@ type ArenaRow = {
   arena_no?: string | number;
   title?: string;
   champion?: string;
+  related_references?: string;
   verification_status?: string;
   highlights?: string;
   industry?: string;
@@ -51,7 +52,10 @@ type ArenaRow = {
 
 type ArenaCommonRow = {
   arena_no?: string | number;
-  video_url?: string | null;
+  video_url_zh?: string | null;
+  video_url_global?: string | null;
+  video_cover_image_url?: string | null;
+  homepage_display_order?: string | number | null;
 };
 
 function cleanText(value: unknown): string {
@@ -130,6 +134,8 @@ function buildArenasFromJson(): Arena[] {
     if (!titleZh || titleZh.includes('敬请期待')) continue;
 
     const folderId = folderMap.get(arenaNo) || '';
+    const videoUrlZh = cleanText(commonRow?.video_url_zh) || undefined;
+    const videoUrlGlobal = cleanText(commonRow?.video_url_global) || undefined;
     arenas.push({
       id: arenaNo,
       folderId,
@@ -148,13 +154,17 @@ function buildArenasFromJson(): Arena[] {
       challengerEn: cleanText(enRow?.challenger),
       highlights: cleanText(row.highlights),
       highlightsEn: cleanText(enRow?.highlights),
+      relatedReferences: cleanText(row.related_references) || undefined,
+      relatedReferencesEn: cleanText(enRow?.related_references) || undefined,
       metrics: {
         speed: cleanText(row.speed),
         quality: cleanText(row.quality),
         security: cleanText(row.security),
         cost: cleanText(row.cost),
       },
-      videoUrl: cleanText(commonRow?.video_url) || undefined,
+      videoUrlZh,
+      videoUrlGlobal,
+      videoCoverImageUrl: cleanText(commonRow?.video_cover_image_url) || undefined,
       hasContent: hasArenaContent(folderId),
     });
   }
@@ -179,6 +189,35 @@ export async function getAllArenasFromStaticData(): Promise<Arena[]> {
   cachedArenas = buildArenasFromJson();
   cachedArenasMtimeKey = mtimeKey;
   return cachedArenas;
+}
+
+function parseDisplayOrder(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed);
+    if (Number.isFinite(parsed)) {
+      return Math.trunc(parsed);
+    }
+  }
+  return null;
+}
+
+export async function getHomepageDisplayArenaIdsFromStaticData(): Promise<string[]> {
+  const jsonPaths = getArenaJsonPaths();
+  const commonRows = readJsonRows<ArenaCommonRow>(jsonPaths.common);
+
+  return commonRows
+    .map((row) => ({
+      arenaNo: cleanText(row.arena_no),
+      order: parseDisplayOrder(row.homepage_display_order),
+    }))
+    .filter((row) => row.arenaNo && row.order !== null)
+    .sort((a, b) => Number(a.order) - Number(b.order))
+    .map((row) => row.arenaNo);
 }
 
 export async function getArenaContentFromStaticData(

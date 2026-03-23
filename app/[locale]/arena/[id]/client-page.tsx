@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Arena } from '@/lib/types';
+import { VideoPlayOverlay } from '@/components/ui/video-play-overlay';
+import { getBilibiliEmbedUrl, getYouTubeEmbedUrl, isBilibiliUrl, isYouTubeUrl } from '@/lib/video-platform';
 import {
   BarChart3,
   ArrowLeft,
@@ -192,6 +194,34 @@ function getNormalizedDependencies(stackText: string): string {
   return uniqueParts.length > 0 ? uniqueParts.join(' · ') : 'N/A';
 }
 
+type RelatedReferenceItem = {
+  label: string;
+  href: string;
+};
+
+function parseRelatedReferencesWithLinks(raw: string | undefined): RelatedReferenceItem[] {
+  if (!raw) return [];
+
+  const items = raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^[-•]\s*/, ''));
+
+  return items
+    .map((line) => {
+      const urlMatch = line.match(/https?:\/\/\S+/i);
+      if (!urlMatch) return null;
+
+      const href = urlMatch[0].replace(/[),.;，。；]+$/, '');
+      const rawLabel = line.slice(0, urlMatch.index).replace(/[:：]\s*$/, '').trim();
+      const label = rawLabel || href;
+
+      return { label, href };
+    })
+    .filter((item): item is RelatedReferenceItem => item !== null);
+}
+
 interface ArenaDetailClientProps {
   arena: Arena;
   locale: string;
@@ -260,6 +290,10 @@ function isTabContentReady(content?: ArenaTabContent): boolean {
 
 export function ArenaDetailClient({ arena, locale, arenaId: _arenaId, initialContent, hasContent }: ArenaDetailClientProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [isVideoActivated, setIsVideoActivated] = useState(false);
+  const [videoLoading, setVideoLoading] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const content = initialContent;
   const isChina = locale === 'zh';
   const isVerified = arena.verificationStatus === '已验证';
@@ -284,7 +318,12 @@ export function ArenaDetailClient({ arena, locale, arenaId: _arenaId, initialCon
       return <OverviewSection arena={arena} content={content.overview} locale={locale} activeTab={activeTab} setActiveTab={(tab) => setActiveTab(tab as TabType)} />;
     }
     if (activeTab === 'implementation' && isTabContentReady(content.implementation)) {
-      return <ImplementationSection content={content.implementation!} locale={locale} />;
+      return (
+        <ImplementationSection
+          content={content.implementation!}
+          locale={locale}
+        />
+      );
     }
     if (activeTab === 'tech-configuration' && isTabContentReady(content['tech-configuration'])) {
       return <TechConfigurationSection content={content['tech-configuration']} locale={locale} />;
@@ -319,7 +358,43 @@ export function ArenaDetailClient({ arena, locale, arenaId: _arenaId, initialCon
     cost: arena.metrics?.cost || '较优',
     security: arena.metrics?.security || '较高',
   };
-  const hasVideo = Boolean((arena.videoUrl || '').trim());
+  const videoUrl = (isChina ? (arena.videoUrlZh || '') : (arena.videoUrlGlobal || '')).trim();
+  const videoCoverImageUrl = (arena.videoCoverImageUrl || '').trim();
+  const hasVideo = Boolean(videoUrl);
+  const isBilibiliVideo = hasVideo && isBilibiliUrl(videoUrl);
+  const isYouTubeVideo = hasVideo && isYouTubeUrl(videoUrl);
+  const bilibiliEmbedUrl = isBilibiliVideo ? getBilibiliEmbedUrl(videoUrl) : null;
+  const youTubeEmbedUrl = isYouTubeVideo ? getYouTubeEmbedUrl(videoUrl) : null;
+
+  useEffect(() => {
+    if (!hasVideo || !isVideoActivated) {
+      return;
+    }
+
+    const videoEl = videoRef.current;
+    if (!videoEl) {
+      return;
+    }
+
+    videoEl.muted = true;
+    videoEl.load();
+    const playPromise = videoEl.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {
+        setVideoLoading(false);
+      });
+    }
+  }, [hasVideo, isVideoActivated]);
+
+  const activateVideoPlayback = () => {
+    if (!hasVideo || isBilibiliVideo || isYouTubeVideo) {
+      return;
+    }
+
+    setVideoError(false);
+    setVideoLoading(true);
+    setIsVideoActivated(true);
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -455,17 +530,103 @@ export function ArenaDetailClient({ arena, locale, arenaId: _arenaId, initialCon
               <div className="lg:col-span-3">
                 <div className="relative h-[300px] rounded-2xl overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-2xl border border-slate-700/50">
                   {hasVideo ? (
-                    <video
-                      className="w-full h-full object-contain"
-                      controls
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                    >
-                      <source src={arena.videoUrl} type="video/mp4" />
-                      {locale === 'zh' ? '您的浏览器不支持视频播放' : 'Your browser does not support the video tag.'}
-                    </video>
+                    videoError ? (
+                      <div className="w-full h-full bg-black flex items-center justify-center text-white p-8">
+                        <div className="text-center">
+                          <svg className="w-16 h-16 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-lg mb-2">
+                            {locale === 'zh' ? '视频加载失败' : 'Video Failed to Load'}
+                          </p>
+                          <p className="text-sm text-gray-400">{locale === 'zh' ? '演示视频正在准备中' : 'Demo video coming soon'}</p>
+                        </div>
+                      </div>
+                    ) : isBilibiliVideo ? (
+                      bilibiliEmbedUrl ? (
+                        <iframe
+                          src={bilibiliEmbedUrl}
+                          className="w-full h-full"
+                          allow="autoplay; fullscreen"
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="strict-origin-when-cross-origin"
+                          title={locale === 'zh' ? '哔哩哔哩视频' : 'Bilibili video'}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-black flex items-center justify-center text-white p-8">
+                          <div className="text-center">
+                            <p className="text-lg mb-2">
+                              {locale === 'zh' ? 'Bilibili 链接格式暂不支持' : 'Unsupported Bilibili URL format'}
+                            </p>
+                            <p className="text-sm text-gray-400">
+                              {locale === 'zh' ? '请使用 bilibili.com/video/BV... 链接' : 'Please use a bilibili.com/video/BV... link'}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    ) : isYouTubeVideo ? (
+                      youTubeEmbedUrl ? (
+                        <iframe
+                          src={youTubeEmbedUrl}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="strict-origin-when-cross-origin"
+                          title={locale === 'zh' ? 'YouTube 视频' : 'YouTube video'}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-black flex items-center justify-center text-white p-8">
+                          <div className="text-center">
+                            <p className="text-lg mb-2">
+                              {locale === 'zh' ? 'YouTube 链接格式暂不支持' : 'Unsupported YouTube URL format'}
+                            </p>
+                            <p className="text-sm text-gray-400">
+                              {locale === 'zh' ? '请使用 youtube.com/watch?v=... 或 youtu.be/... 链接' : 'Please use a youtube.com/watch?v=... or youtu.be/... link'}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    ) : !isVideoActivated ? (
+                      <VideoPlayOverlay
+                        className="h-full"
+                        coverImageUrl={videoCoverImageUrl}
+                        coverAlt={locale === 'zh' ? '视频封面' : 'Video cover'}
+                        ariaLabel={locale === 'zh' ? '播放演示视频' : 'Play demo video'}
+                        onClick={activateVideoPlayback}
+                      />
+                    ) : (
+                      <video
+                        ref={videoRef}
+                        className="w-full h-full object-contain"
+                        controls
+                        loop={false}
+                        muted
+                        preload="none"
+                        playsInline
+                        onError={() => {
+                          setVideoError(true);
+                          setVideoLoading(false);
+                        }}
+                        onPlaying={() => {
+                          setVideoLoading(false);
+                        }}
+                        onLoadedMetadata={() => {
+                          setVideoLoading(false);
+                        }}
+                        onCanPlay={() => {
+                          setVideoError(false);
+                          setVideoLoading(false);
+                        }}
+                        onLoadedData={() => {
+                          setVideoLoading(false);
+                        }}
+                      >
+                        {isVideoActivated ? <source src={videoUrl} type="video/mp4" /> : null}
+                        {locale === 'zh' ? '您的浏览器不支持视频播放' : 'Your browser does not support the video tag.'}
+                      </video>
+                    )
                   ) : (
                     <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-[#07142d] via-[#0a2651] to-[#192f67]">
                       <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(139,180,255,0.18),transparent_44%),radial-gradient(circle_at_78%_76%,rgba(132,116,255,0.14),transparent_46%)]" />
@@ -490,6 +651,14 @@ export function ArenaDetailClient({ arena, locale, arenaId: _arenaId, initialCon
                       </div>
                     </div>
                   )}
+                  {videoLoading && !videoError && hasVideo && isVideoActivated && !isBilibiliVideo && !isYouTubeVideo ? (
+                    <div className="absolute inset-0 bg-black/45 flex items-center justify-center">
+                      <div className="text-white text-center">
+                        <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-3"></div>
+                        <p className="text-sm">{locale === 'zh' ? '视频加载中...' : 'Loading video...'}</p>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1246,6 +1415,9 @@ function OverviewSection({ arena, content, locale, activeTab, setActiveTab }: {
     const firstReleased = metadata['firstReleased'] || '-';
     const lastUpdated = metadata['lastUpdated'] || '-';
 
+    const dependencyReferences = parseRelatedReferencesWithLinks(
+      isChina ? arena.relatedReferences : (arena.relatedReferencesEn || arena.relatedReferences)
+    );
     const dependencies = getNormalizedDependencies(isChina ? arena.champion : arena.championEn);
 
     // Extract implementation link
@@ -1354,7 +1526,23 @@ function OverviewSection({ arena, content, locale, activeTab, setActiveTab }: {
                   </div>
                     <div className="flex-1">
                       <div className="text-xs text-gray-500 mb-0.5">{isChina ? '关键依赖' : 'Dependencies'}</div>
-                    <div className="text-sm text-gray-900">{dependencies}</div>
+                    {dependencyReferences.length > 0 ? (
+                      <div className="space-y-1.5 pt-0.5">
+                        {dependencyReferences.map((item, idx) => (
+                          <a
+                            key={`${item.href}-${idx}`}
+                            href={item.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-sm text-gray-900 hover:text-blue-700 hover:underline underline-offset-2 leading-relaxed"
+                          >
+                            {item.label}
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-900">{dependencies}</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1737,7 +1925,13 @@ function OverviewSection({ arena, content, locale, activeTab, setActiveTab }: {
 }
 
 // Implementation Section Component - Phase-based card design
-function ImplementationSection({ content, locale }: { content: ArenaTabContent; locale: string }) {
+function ImplementationSection({
+  content,
+  locale,
+}: {
+  content: ArenaTabContent;
+  locale: string;
+}) {
   const isChina = locale === 'zh';
 
   // Icon mapping for phases
@@ -1770,11 +1964,12 @@ function ImplementationSection({ content, locale }: { content: ArenaTabContent; 
     }>;
   };
 
-  // Parse implementation content into phases (supports both JSON phases and markdown format)
   const parseContent = (tabContent: ArenaTabContent): PhaseType[] => {
+    let phases: PhaseType[] = [];
+
     // If content is already in JSON phases format
     if (typeof tabContent === 'object' && Array.isArray(tabContent.phases)) {
-      return tabContent.phases.map((phase) => ({
+      phases = tabContent.phases.map((phase) => ({
         number: phase.number,
         title: phase.title,
         icon: getPhaseIcon(phase.number),
@@ -1784,71 +1979,70 @@ function ImplementationSection({ content, locale }: { content: ArenaTabContent; 
           content: sub.content,
         })),
       }));
-    }
+    } else {
+      // Fallback: parse markdown format
+      const text = typeof tabContent === 'string' ? tabContent : (typeof tabContent === 'object' && tabContent.markdown) ? tabContent.markdown : '';
+      if (!text) return [];
 
-    // Fallback: parse markdown format
-    const text = typeof tabContent === 'string' ? tabContent : (typeof tabContent === 'object' && tabContent.markdown) ? tabContent.markdown : '';
-    if (!text) return [];
+      const lines = text.split('\n');
 
-    const lines = text.split('\n');
-    const phases: PhaseType[] = [];
+      let currentPhase: PhaseType | null = null;
+      let currentSubsection: PhaseType['subsections'][0] | null = null;
 
-    let currentPhase: PhaseType | null = null;
-    let currentSubsection: PhaseType['subsections'][0] | null = null;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+        // Skip empty lines and separators
+        if (!line || line === '---') continue;
 
-      // Skip empty lines and separators
-      if (!line || line === '---') continue;
+        // Detect phase headers (__PHASE X__)
+        const phaseMatch = line.match(/^__PHASE\s+(\d+)\s+(.+)__$/);
+        if (phaseMatch) {
+          if (currentPhase) {
+            if (currentSubsection) {
+              currentPhase.subsections.push(currentSubsection);
+            }
+            phases.push(currentPhase);
+          }
+          const phaseNum = parseInt(phaseMatch[1]);
+          currentPhase = {
+            number: phaseNum,
+            title: phaseMatch[2].trim(),
+            icon: getPhaseIcon(phaseNum),
+            subsections: []
+          };
+          currentSubsection = null;
+          continue;
+        }
 
-      // Detect phase headers (__PHASE X__)
-      const phaseMatch = line.match(/^__PHASE\s+(\d+)\s+(.+)__$/);
-      if (phaseMatch) {
-        if (currentPhase) {
+        // Detect subsection headers (__Title__)
+        const subsectionMatch = line.match(/^__(.+)__$/);
+        if (subsectionMatch && currentPhase) {
           if (currentSubsection) {
             currentPhase.subsections.push(currentSubsection);
           }
-          phases.push(currentPhase);
+          const title = subsectionMatch[1].trim();
+          currentSubsection = {
+            title,
+            icon: getSubsectionIcon(title),
+            content: []
+          };
+          continue;
         }
-        const phaseNum = parseInt(phaseMatch[1]);
-        currentPhase = {
-          number: phaseNum,
-          title: phaseMatch[2].trim(),
-          icon: getPhaseIcon(phaseNum),
-          subsections: []
-        };
-        currentSubsection = null;
-        continue;
+
+        // Add content to current subsection
+        if (currentPhase && currentSubsection && line) {
+          currentSubsection.content.push(line);
+        }
       }
 
-      // Detect subsection headers (__Title__)
-      const subsectionMatch = line.match(/^__(.+)__$/);
-      if (subsectionMatch && currentPhase) {
+      // Push last phase and subsection
+      if (currentPhase) {
         if (currentSubsection) {
           currentPhase.subsections.push(currentSubsection);
         }
-        const title = subsectionMatch[1].trim();
-        currentSubsection = {
-          title,
-          icon: getSubsectionIcon(title),
-          content: []
-        };
-        continue;
+        phases.push(currentPhase);
       }
-
-      // Add content to current subsection
-      if (currentPhase && currentSubsection && line) {
-        currentSubsection.content.push(line);
-      }
-    }
-
-    // Push last phase and subsection
-    if (currentPhase) {
-      if (currentSubsection) {
-        currentPhase.subsections.push(currentSubsection);
-      }
-      phases.push(currentPhase);
     }
 
     return phases;
